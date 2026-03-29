@@ -6,11 +6,33 @@ An MCP (Model Context Protocol) server for controlling [Music Assistant](https:/
 
 - A running [Music Assistant](https://music-assistant.io/) server
 - A long-lived access token (Settings > Users > Long-lived access token)
-- [uv](https://docs.astral.sh/uv/) installed
 
 ## Installation
 
-No local installation required. Configure your MCP client to run directly from GitHub using `uvx`:
+### Option 1: Docker (Recommended for Unraid / remote servers)
+
+Pull the pre-built image from GHCR:
+
+```bash
+docker pull ghcr.io/teejs/music-assistant-mcp-docker:latest
+```
+
+Run it:
+
+```bash
+docker run -d \
+  --name music-assistant-mcp \
+  -p 8000:8000 \
+  -e MUSIC_ASSISTANT_URL=http://192.168.1.100:8095 \
+  -e MUSIC_ASSISTANT_TOKEN=your_token_here \
+  ghcr.io/teejs/music-assistant-mcp-docker:latest
+```
+
+The MCP server will be available at `http://<host>:8000/sse`. See [Docker Deployment](#docker-deployment) below for full details.
+
+### Option 2: Local (via uvx)
+
+Requires [uv](https://docs.astral.sh/uv/) installed. Configure your MCP client to run directly from GitHub:
 
 ```json
 {
@@ -18,7 +40,7 @@ No local installation required. Configure your MCP client to run directly from G
     "music-assistant": {
       "command": "uvx",
       "args": [
-        "--from", "git+https://github.com/davidpadbury/music-assistant-mcp",
+        "--from", "git+https://github.com/TeeJS/music-assistant-mcp-docker",
         "music-assistant-mcp"
       ],
       "env": {
@@ -129,20 +151,27 @@ ma_transfer_queue(source_queue_id="living_room", target_queue_id="kitchen")
 - Queue IDs are typically the same as player IDs
 - Use `option="add"` with `ma_play_media` to add to queue without interrupting current playback
 
-## Docker / Unraid Deployment
+## Docker Deployment
 
-Run the MCP server as a Docker container so remote MCP clients can connect over the network via SSE.
+The Docker image runs the MCP server with SSE transport, making it accessible over the network to any MCP client.
 
-### Quick Start with Docker Compose
+### Docker Compose
 
-1. Create a `.env` file:
+1. Clone this repository:
+
+```bash
+git clone https://github.com/TeeJS/music-assistant-mcp-docker.git
+cd music-assistant-mcp-docker
+```
+
+2. Create a `.env` file with your Music Assistant connection details:
 
 ```
 MUSIC_ASSISTANT_URL=http://192.168.1.100:8095
 MUSIC_ASSISTANT_TOKEN=your_token_here
 ```
 
-2. Start the container:
+3. Start the container:
 
 ```bash
 docker compose up -d
@@ -150,13 +179,7 @@ docker compose up -d
 
 The SSE endpoint will be available at `http://<host>:8000/sse`.
 
-### Pull from GHCR
-
-```bash
-docker pull ghcr.io/teejs/music-assistant-mcp-docker:latest
-```
-
-Or run directly:
+### Docker Run
 
 ```bash
 docker run -d \
@@ -167,21 +190,31 @@ docker run -d \
   ghcr.io/teejs/music-assistant-mcp-docker:latest
 ```
 
+### Build Locally
+
+```bash
+docker build -t music-assistant-mcp .
+```
+
 ### Unraid Setup
 
-In the Unraid Docker UI:
+1. In the Unraid Docker UI, click **Add Container**
+2. Set **Repository** to `ghcr.io/teejs/music-assistant-mcp-docker:latest`
+3. Add a **Port** mapping: Container port `8000` -> Host port `8000`
+4. Add the following **Environment Variables**:
 
-1. **Repository**: `ghcr.io/teejs/music-assistant-mcp-docker:latest`
-2. **Port mapping**: Container port `8000` -> Host port `8000`
-3. **Environment variables**:
-   - `MUSIC_ASSISTANT_URL` = `http://<your-unraid-ip>:8095` (or wherever Music Assistant is running)
-   - `MUSIC_ASSISTANT_TOKEN` = your long-lived access token
+| Variable | Value |
+|----------|-------|
+| `MUSIC_ASSISTANT_URL` | `http://<your-unraid-ip>:8095` (or wherever Music Assistant is running) |
+| `MUSIC_ASSISTANT_TOKEN` | Your long-lived access token from Music Assistant |
 
-**Networking note**: If Music Assistant runs on the same Unraid server, use the host IP address (e.g., `http://192.168.1.100:8095`), not `localhost`, since the container uses bridge networking by default.
+5. Click **Apply**
 
-### Client Configuration (Remote SSE)
+**Networking note**: If Music Assistant runs on the same Unraid server, use the host's IP address (e.g., `http://192.168.1.100:8095`) rather than `localhost`, because the container uses bridge networking by default.
 
-Configure your MCP client to connect to the SSE endpoint:
+### Connecting MCP Clients to the Docker Server
+
+Once the container is running, configure your MCP client to connect via the SSE endpoint:
 
 **Claude Desktop** (`claude_desktop_config.json`):
 
@@ -189,7 +222,7 @@ Configure your MCP client to connect to the SSE endpoint:
 {
   "mcpServers": {
     "music-assistant": {
-      "url": "http://<unraid-ip>:8000/sse"
+      "url": "http://<server-ip>:8000/sse"
     }
   }
 }
@@ -201,21 +234,25 @@ Configure your MCP client to connect to the SSE endpoint:
 {
   "mcpServers": {
     "music-assistant": {
-      "url": "http://<unraid-ip>:8000/sse"
+      "url": "http://<server-ip>:8000/sse"
     }
   }
 }
 ```
 
+Replace `<server-ip>` with your Unraid/Docker host IP address.
+
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MUSIC_ASSISTANT_URL` | *(required)* | URL of your Music Assistant server |
-| `MUSIC_ASSISTANT_TOKEN` | *(optional)* | Long-lived access token |
-| `MCP_TRANSPORT` | `sse` (Docker) / `stdio` (local) | Transport protocol |
-| `MCP_HOST` | `0.0.0.0` (Docker) / `127.0.0.1` (local) | Listen address |
-| `MCP_PORT` | `8000` | Listen port |
+| Variable | Required | Default (Docker) | Default (Local) | Description |
+|----------|----------|-------------------|------------------|-------------|
+| `MUSIC_ASSISTANT_URL` | Yes | -- | -- | URL of your Music Assistant server (e.g., `http://192.168.1.100:8095`) |
+| `MUSIC_ASSISTANT_TOKEN` | No | -- | -- | Long-lived access token from Music Assistant (Settings > Users) |
+| `MCP_TRANSPORT` | No | `sse` | `stdio` | Transport protocol (`sse` or `streamable-http`) |
+| `MCP_HOST` | No | `0.0.0.0` | `127.0.0.1` | Network interface to listen on |
+| `MCP_PORT` | No | `8000` | `8000` | Port to listen on |
+
+The Docker image sets `MCP_TRANSPORT=sse` and `MCP_HOST=0.0.0.0` automatically. When running locally via `uvx`, the defaults are `stdio` transport on `127.0.0.1`, so existing local setups are unaffected.
 
 ## License
 
