@@ -16,8 +16,9 @@ RUN uv venv .venv && uv sync --frozen --no-install-project
 COPY src/ src/
 COPY README.md ./
 
-# Install the project itself
-RUN uv sync --frozen
+# Install the project itself (--no-editable so it copies into site-packages
+# rather than linking back to src/ which won't exist in the runtime stage)
+RUN uv sync --frozen --no-editable
 
 # Stage 2: Slim runtime
 FROM python:3.11-slim-bookworm
