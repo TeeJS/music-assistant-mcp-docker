@@ -7,7 +7,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MCP_TRANSPORT=sse
+      - MCP_TRANSPORT=streamable-http
       - MCP_HOST=0.0.0.0
       - MCP_PORT=8000
       - MUSIC_ASSISTANT_URL=${MUSIC_ASSISTANT_URL}

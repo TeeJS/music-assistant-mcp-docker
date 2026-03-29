@@ -28,7 +28,7 @@ docker run -d \
   ghcr.io/teejs/music-assistant-mcp-docker:latest
 ```
 
-The MCP server will be available at `http://<host>:8000/sse`. See [Docker Deployment](#docker-deployment) below for full details.
+The MCP server will be available at `http://<host>:8000/mcp`. See [Docker Deployment](#docker-deployment) below for full details.
 
 ### Option 2: Local (via uvx)
 
@@ -153,7 +153,7 @@ ma_transfer_queue(source_queue_id="living_room", target_queue_id="kitchen")
 
 ## Docker Deployment
 
-The Docker image runs the MCP server with SSE transport, making it accessible over the network to any MCP client.
+The Docker image runs the MCP server with streamable HTTP transport, exposing a `/mcp` endpoint that any MCP client can connect to over the network.
 
 ### Docker Compose
 
@@ -177,7 +177,7 @@ MUSIC_ASSISTANT_TOKEN=your_token_here
 docker compose up -d
 ```
 
-The SSE endpoint will be available at `http://<host>:8000/sse`.
+The MCP endpoint will be available at `http://<host>:8000/mcp`.
 
 ### Docker Run
 
@@ -214,7 +214,7 @@ docker build -t music-assistant-mcp .
 
 ### Connecting MCP Clients to the Docker Server
 
-Once the container is running, configure your MCP client to connect via the SSE endpoint:
+Once the container is running, configure your MCP client to connect to the `/mcp` endpoint:
 
 **Claude Desktop** (`claude_desktop_config.json`):
 
@@ -222,7 +222,7 @@ Once the container is running, configure your MCP client to connect via the SSE 
 {
   "mcpServers": {
     "music-assistant": {
-      "url": "http://<server-ip>:8000/sse"
+      "url": "http://<server-ip>:8000/mcp"
     }
   }
 }
@@ -234,7 +234,7 @@ Once the container is running, configure your MCP client to connect via the SSE 
 {
   "mcpServers": {
     "music-assistant": {
-      "url": "http://<server-ip>:8000/sse"
+      "url": "http://<server-ip>:8000/mcp"
     }
   }
 }
@@ -248,11 +248,11 @@ Replace `<server-ip>` with your Unraid/Docker host IP address.
 |----------|----------|-------------------|------------------|-------------|
 | `MUSIC_ASSISTANT_URL` | Yes | -- | -- | URL of your Music Assistant server (e.g., `http://192.168.1.100:8095`) |
 | `MUSIC_ASSISTANT_TOKEN` | No | -- | -- | Long-lived access token from Music Assistant (Settings > Users) |
-| `MCP_TRANSPORT` | No | `sse` | `stdio` | Transport protocol (`sse` or `streamable-http`) |
+| `MCP_TRANSPORT` | No | `streamable-http` | `stdio` | Transport protocol (`streamable-http` or `sse`) |
 | `MCP_HOST` | No | `0.0.0.0` | `127.0.0.1` | Network interface to listen on |
 | `MCP_PORT` | No | `8000` | `8000` | Port to listen on |
 
-The Docker image sets `MCP_TRANSPORT=sse` and `MCP_HOST=0.0.0.0` automatically. When running locally via `uvx`, the defaults are `stdio` transport on `127.0.0.1`, so existing local setups are unaffected.
+The Docker image sets `MCP_TRANSPORT=streamable-http` and `MCP_HOST=0.0.0.0` automatically. When running locally via `uvx`, the defaults are `stdio` transport on `127.0.0.1`, so existing local setups are unaffected.
 
 ## License
 

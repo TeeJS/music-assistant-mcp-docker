@@ -31,8 +31,8 @@ COPY --from=builder /app/.venv .venv/
 # Use the venv's Python and scripts
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Default to SSE transport for Docker deployments
-ENV MCP_TRANSPORT=sse
+# Default to streamable-http transport for Docker deployments (exposes /mcp)
+ENV MCP_TRANSPORT=streamable-http
 ENV MCP_HOST=0.0.0.0
 ENV MCP_PORT=8000
 
