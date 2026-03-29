@@ -1,13 +1,16 @@
 # Stage 1: Build with uv
-FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS builder
+FROM python:3.11-slim-bookworm AS builder
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
 # Copy dependency files first for layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies only (no project yet)
-RUN uv sync --frozen --no-install-project
+# Create venv using the system Python so paths match the runtime stage
+RUN uv venv .venv && uv sync --frozen --no-install-project
 
 # Copy source code and README (needed by hatchling for metadata)
 COPY src/ src/
@@ -21,7 +24,7 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Copy the virtual environment from builder
+# Copy the virtual environment from builder (Python paths match since same base image)
 COPY --from=builder /app/.venv .venv/
 
 # Use the venv's Python and scripts
