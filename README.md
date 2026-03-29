@@ -129,6 +129,94 @@ ma_transfer_queue(source_queue_id="living_room", target_queue_id="kitchen")
 - Queue IDs are typically the same as player IDs
 - Use `option="add"` with `ma_play_media` to add to queue without interrupting current playback
 
+## Docker / Unraid Deployment
+
+Run the MCP server as a Docker container so remote MCP clients can connect over the network via SSE.
+
+### Quick Start with Docker Compose
+
+1. Create a `.env` file:
+
+```
+MUSIC_ASSISTANT_URL=http://192.168.1.100:8095
+MUSIC_ASSISTANT_TOKEN=your_token_here
+```
+
+2. Start the container:
+
+```bash
+docker compose up -d
+```
+
+The SSE endpoint will be available at `http://<host>:8000/sse`.
+
+### Pull from GHCR
+
+```bash
+docker pull ghcr.io/teejs/music-assistant-mcp-docker:latest
+```
+
+Or run directly:
+
+```bash
+docker run -d \
+  --name music-assistant-mcp \
+  -p 8000:8000 \
+  -e MUSIC_ASSISTANT_URL=http://192.168.1.100:8095 \
+  -e MUSIC_ASSISTANT_TOKEN=your_token_here \
+  ghcr.io/teejs/music-assistant-mcp-docker:latest
+```
+
+### Unraid Setup
+
+In the Unraid Docker UI:
+
+1. **Repository**: `ghcr.io/teejs/music-assistant-mcp-docker:latest`
+2. **Port mapping**: Container port `8000` -> Host port `8000`
+3. **Environment variables**:
+   - `MUSIC_ASSISTANT_URL` = `http://<your-unraid-ip>:8095` (or wherever Music Assistant is running)
+   - `MUSIC_ASSISTANT_TOKEN` = your long-lived access token
+
+**Networking note**: If Music Assistant runs on the same Unraid server, use the host IP address (e.g., `http://192.168.1.100:8095`), not `localhost`, since the container uses bridge networking by default.
+
+### Client Configuration (Remote SSE)
+
+Configure your MCP client to connect to the SSE endpoint:
+
+**Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "music-assistant": {
+      "url": "http://<unraid-ip>:8000/sse"
+    }
+  }
+}
+```
+
+**Claude Code** (`.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "music-assistant": {
+      "url": "http://<unraid-ip>:8000/sse"
+    }
+  }
+}
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MUSIC_ASSISTANT_URL` | *(required)* | URL of your Music Assistant server |
+| `MUSIC_ASSISTANT_TOKEN` | *(optional)* | Long-lived access token |
+| `MCP_TRANSPORT` | `sse` (Docker) / `stdio` (local) | Transport protocol |
+| `MCP_HOST` | `0.0.0.0` (Docker) / `127.0.0.1` (local) | Listen address |
+| `MCP_PORT` | `8000` | Listen port |
+
 ## License
 
 MIT

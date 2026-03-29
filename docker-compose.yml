@@ -1,0 +1,14 @@
+services:
+  music-assistant-mcp:
+    build: .
+    image: ghcr.io/teejs/music-assistant-mcp-docker:latest
+    container_name: music-assistant-mcp
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MCP_TRANSPORT=sse
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
+      - MUSIC_ASSISTANT_URL=${MUSIC_ASSISTANT_URL}
+      - MUSIC_ASSISTANT_TOKEN=${MUSIC_ASSISTANT_TOKEN}
